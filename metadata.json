@@ -1,0 +1,8 @@
+{
+  "name": "Aura",
+  "description": "A premium, mobile-first neobank and investment prototype featuring multi-currency wallets, virtual cards, and AI-powered financial insights.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
