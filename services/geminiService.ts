@@ -1,9 +1,9 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Transaction, Investment } from "../types";
 import { FAQS } from "../constants";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenerativeAI({ apiKey: process.env.API_KEY || "" });
 
 const faqContext = FAQS.map(f => `Q: ${f.q}\nA: ${f.a}`).join("\n\n");
 
@@ -29,11 +29,9 @@ export const getFinancialInsight = async (transactions: Transaction[], investmen
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-    return response.text;
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const response = await model.generateContent(prompt);
+    return response.response.text();
   } catch (error) {
     console.error("Gemini Error:", error);
     return "Node connectivity error. Analysis sequence failed.";
@@ -54,14 +52,9 @@ export const getAssetAnalysis = async (symbol: string, name: string, type: strin
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget: 2000 }
-      }
-    });
-    return response.text;
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    const response = await model.generateContent(prompt);
+    return response.response.text();
   } catch (error) {
     console.error("Asset Analysis Error:", error);
     return "Error: Could not retrieve market data packets.";
@@ -69,30 +62,13 @@ export const getAssetAnalysis = async (symbol: string, name: string, type: strin
 };
 
 export const generateNewDeals = async () => {
-  const prompt = "Generate 3 reward data points for Aura. Format: brand name, deal string, one emoji logo, point cost (500-5000). Outcome: JSON array.";
+  const prompt = "Generate 3 reward data points for Aura. Format: brand name, deal string, one emoji logo, point cost (500-5000). Outcome: JSON array. Return ONLY valid JSON array with no additional text.";
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              brand: { type: Type.STRING },
-              deal: { type: Type.STRING },
-              logo: { type: Type.STRING },
-              cost: { type: Type.NUMBER }
-            },
-            required: ["brand", "deal", "logo", "cost"]
-          }
-        }
-      }
-    });
-    return JSON.parse(response.text);
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const response = await model.generateContent(prompt);
+    const text = response.response.text();
+    return JSON.parse(text);
   } catch (error) {
     console.error("Deal Generation Error:", error);
     return [];
@@ -100,13 +76,12 @@ export const generateNewDeals = async () => {
 };
 
 export const chatWithAssistant = async (history: {role: string, text: string}[], message: string) => {
-  const chat = ai.chats.create({
-    model: 'gemini-3-flash-preview',
-    config: {
-      systemInstruction: `You are "ProBot", a logic-based interface node for Aura. You function as "Robot Care". 
-      
+  const model = ai.getGenerativeModel({
+    model: 'gemini-1.5-flash',
+    systemInstruction: `You are "ProBot", a logic-based interface node for Aura. You function as "Robot Care".
+
 RULES:
-1. You are emotionless. You have no human feelings. 
+1. You are emotionless. You have no human feelings.
 2. Your replies must be 100% accurate and factual.
 3. Do not use conversational filler, pleasantries, or politeness (e.g., avoid "how can I help", "I understand").
 4. If a user asks a question, refer primarily to the KNOWLEDGE BASE below. If the answer is not there, provide the most technically accurate data-driven response possible.
@@ -116,12 +91,11 @@ KNOWLEDGE BASE (FAQ Data):
 ${faqContext}
 
 End of System Instruction. Proceed with data output only.`
-    }
   });
 
   try {
-    const result = await chat.sendMessage({ message });
-    return result.text;
+    const result = await model.generateContent(message);
+    return result.response.text();
   } catch (error) {
     console.error("Chat Error:", error);
     return "Packet loss detected. Secure channel unstable.";
