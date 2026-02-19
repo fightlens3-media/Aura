@@ -1,1 +1,1 @@
-{ "name": "aura", "version": "1.0.0", "private": false, "dependencies": { "react": "^18.0.0", "react-dom": "^18.0.0" }, "scripts": { "start": "vite", "build": "vite build" } }
+{"name":"aura","version":"1.0.0","private":false,"dependencies":{"react":"^18.0.0","react-dom":"^18.0.0"},"scripts":{"start":"vite","build":"vite build"},"devDependencies":{"@vitejs/plugin-react":"^5.1.4","vite":"^7.3.1"}}
